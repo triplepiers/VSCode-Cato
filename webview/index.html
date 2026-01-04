@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome Cat!</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow: auto;
+            /* Allow scrolling if content is too large */
+        }
+
+        h1 {
+            color: var(--vscode-textLink-foreground);
+            margin-bottom: 20px;
+        }
+
+        .cat-container {
+            background-color: var(--vscode-settings-groupedMessageBox-background);
+            border: 1px solid var(--vscode-settings-groupedMessageBox-border);
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        pre {
+            color: var(--vscode-editor-foreground);
+            font-size: 14px;
+            line-height: 1.2;
+            margin: 0;
+            white-space: pre-wrap;
+            /* Ensure preformatted text wraps */
+        }
+
+        .action-button {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+
+        .action-button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Welcome to VS Code, with your new feline friend!</h1>
+
+    <div class="cat-container">
+    </div>
+
+    <p>This is a custom welcome page. Enjoy your coding!</p>
+
+    <div>
+        <button class="action-button" onclick="sayHello()">Say Hello to Cat</button>
+        <button class="action-button" onclick="openDocs()">Open VS Code Docs</button>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi(); // 用于与扩展通信的 API
+
+        function sayHello() {
+            vscode.postMessage({
+                command: 'hello',
+                text: 'Meow!'
+            });
+        }
+
+        function openDocs() {
+            vscode.postMessage({
+                command: 'openUrl',
+                url: 'https://code.visualstudio.com/docs'
+            });
+        }
+
+        // 接收来自扩展的消息
+        window.addEventListener('message', event => {
+            const message = event.data; // 消息内容来自扩展
+            switch (message.command) {
+                case 'updateCat':
+                    const catContainer = document.querySelector('.cat-container');
+                    catContainer.innerHTML = `<pre>${message.text}</pre>`;
+                    break;
+            }
+        });
+    </script>
+    <script>
+        const catAnimations = {
+            "snap": [
+                "   |\\__/,|   (`\\  ",
+                " _.|o o  |_   ) ) ",
+                "-(((---(((--------",
+                " (打哈欠前：清醒状态)",
+                "",
+                "   |\\__/,|   (`\\  ",
+                " _.|O O  |_   ) ) ",
+                "-(((---(((--------",
+                " (开始张嘴...)",
+                "",
+                "   |\\__/,|   (`\\  ",
+                " _.|  W  |_   ) ) ",
+                "-(((---(((--------",
+                " (啊呜——很大一个哈欠)"
+            ].join('\\n'), // 合并成单行字符串，用 \\n 表示换行
+            "walk": [
+                "      |\\__/,|     ",
+                "    _.|o o  |_    ",
+                "走 -> (((---(((   ",
+                "",
+                "       |\\__/,|    ",
+                "     _.|o o  |_   ",
+                " 走 -> (((---(((  ",
+                "",
+                "        |\\__/,|   ",
+                "      _.|o o  |_  ",
+                "  走 -> (((---((( "
+            ].join('\\n')
+        };
+
+        let currentFrameIndex = 0;
+        let currentAnimation = catAnimations.snap.split('\\n\\n'); // 分割回帧，每帧之间有空行
+        const catContainer = document.querySelector('.cat-container');
+
+        function updateCatAnimation() {
+            if (currentFrameIndex >= currentAnimation.length) {
+                currentFrameIndex = 0;
+                // 可以在这里切换动画，例如在打哈欠和走路之间切换
+                // currentAnimation = (currentAnimation === catAnimations.snap.split('\\n\\n')) ? catAnimations.walk.split('\\n\\n') : catAnimations.snap.split('\\n\\n');
+            }
+            catContainer.innerHTML = `<pre>${currentAnimation[currentFrameIndex]}</pre>`;
+            currentFrameIndex++;
+        }
+
+        // 每隔一段时间更新猫咪动画
+        setInterval(updateCatAnimation, 1000); // 每秒更新一次
+        updateCatAnimation(); // 立即显示第一帧
+
+        // ... (其他 JavaScript 代码) ...
+    </script>
+</body>
+
+</html>
