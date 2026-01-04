@@ -1,6 +1,6 @@
-import { window ,TextEditor, Range } from 'vscode';
+import { window ,TextEditor, Range, MarkdownString } from 'vscode';
 const { 
-    // showInformationMessage, showErrorMessage, 
+    showInformationMessage, //showErrorMessage, 
     createTextEditorDecorationType 
 } = window;
 
@@ -33,16 +33,49 @@ const rainbowDecorationTypes = highlightColors.map(color =>
         cursor: 'pointer',
         color: color,
         fontWeight: 'bold',
-        backgroundColor: `${color}15`, 
-        borderRadius: '4px',
-        before: {
+        backgroundColor: `${color}1A`, 
+        borderRadius: '2px',
+        textDecoration: `none; box-shadow: 0 0 8px ${color}66;`,
+        border: `none`,
+        after: {
             contentText: '',
-            textDecoration: `none; 
-                box-shadow: 0 0 10px ${color}, 0 0 2px ${color};
-                border: 1px solid ${color}50;`
+            textDecoration: `none; border-bottom: 2px solid ${color};`
         }
     })
 );
+
+// 基于模版生成 Hover 文本
+const CAT_TEMPLATE = `
+#### 🐾 Cat Found &nbsp;&nbsp; [$(symbol-event) CAPTURE IT]($COMMAND "Click to capture")
+---
+This is cat **$COUNT** in this file.
+`;
+function genHoverText(count: number): MarkdownString {
+    const catIndex = count + 1;
+
+    // 构造用于 Markdown 的 URI 命令
+    const args = encodeURIComponent(JSON.stringify([catIndex]));
+    const commandUri = `command:cato.capture?${args}`;
+
+    // 替换模版中的变量
+    const text = CAT_TEMPLATE
+        .replace('$COUNT', catIndex.toString())
+        .replace('$COMMAND', commandUri);
+    const hoverText = new MarkdownString(text);
+    
+    hoverText.supportThemeIcons = true;   // 支持 ThemeIcon
+    hoverText.isTrusted = true;          // 允许在 Markdown 中执行点击命令
+    return hoverText;
+}
+// 点击 Capture 后显示的内容
+export function showCaptureInfo(catIndex: number): void {
+    showInformationMessage(`Successfully captured Cat #${catIndex}! 🕸️`);
+}
+
+interface DecorationOptions {
+    range: Range,
+    hoverMessage: MarkdownString | string
+};
 
 /**
  * 解析文本，高亮所有的 cat、并返回文本中出现 cat 的次数
@@ -55,17 +88,21 @@ export function highlightCats(editor: TextEditor): number {
     
     // 与 rainbowDecorationTypes 对应，存储每种颜色需要 hightlight 的 Range List
     let count = 0;
-    const decorationBuckets: Range[][] = rainbowDecorationTypes.map(() => []);
+    const decorationBuckets: DecorationOptions[][] = rainbowDecorationTypes.map(() => []);
         
     const text = editor.document.getText();
     while ((match = catRegex.exec(text)) !== null) {
         const start = editor.document.positionAt(match.index);
         const end   = editor.document.positionAt(match.index + match[0].length);
-        const range = new Range(start, end);
+
+        const decorationOps: DecorationOptions = {
+            range: new Range(start, end),
+            hoverMessage: genHoverText(count)
+        }
 
         // 取模、选择颜色
         const colorIndex = count % rainbowDecorationTypes.length;
-        decorationBuckets[colorIndex].push(range);
+        decorationBuckets[colorIndex].push(decorationOps);
         count ++;
     }
 

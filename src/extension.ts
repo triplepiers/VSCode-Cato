@@ -1,8 +1,13 @@
 import * as vscode from 'vscode';
-import { highlightCats } from './GUI';
+import { highlightCats, showCaptureInfo } from './GUI';
 
 // 这个函数将在 activate 后被持续触发
 export function activate(context: vscode.ExtensionContext) {
+    // 注册命令 cato.captre => 在右下角显示弹窗
+    vscode.commands.registerCommand('cato.capture', (catIndex: number) => {
+        showCaptureInfo(catIndex);
+    });
+
     // 防抖操作的更新函数
     function updateDecoration(): void {
         const editor = vscode.window.activeTextEditor;
