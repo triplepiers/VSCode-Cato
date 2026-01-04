@@ -18,8 +18,27 @@
       {
         "command": "cato.capture",
         "title": "Cpature Cats Between Lines"
+      },
+      {
+        "command": "cato.updateToken",
+        "title": "Reset Token for Cato"
       }
-    ]
+    ],
+    "configuration": {
+        "title": "Cato LLM API 配置",
+        "properties": {
+            "cato.apiUrl": {
+                "type": "string",
+                "default": "https://api.deepseek.com/chat/completions",
+                "description": "LLM API 的完整请求地址 (默认使用 deepseek)"
+            },
+            "cato.apiToken": {
+                "type": "string",
+                "default": "",
+                "description": "API Key"
+            }
+        }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

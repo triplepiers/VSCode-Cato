@@ -1,44 +1,68 @@
 import * as vscode from 'vscode';
 import { highlightCats, showCaptureInfo } from './GUI';
+import { ensureApiToken } from './getConfig';
 
 // 这个函数将在 activate 后被持续触发
 export function activate(context: vscode.ExtensionContext) {
-    // 注册命令 cato.captre => 在右下角显示弹窗
-    vscode.commands.registerCommand('cato.capture', (catIndex: number) => {
-        showCaptureInfo(catIndex);
-    });
-
-    // 防抖操作的更新函数
-    function updateDecoration(): void {
+    // 1. 定义更新逻辑
+    const updateDecoration = () => {
         const editor = vscode.window.activeTextEditor;
-        if (editor) highlightCats(editor); 
-    }
+        if (editor) highlightCats(editor);
+    };
 
-    // 防抖定时器
+    // 2. 防抖逻辑（提取变量以便清理）
     let debouncer: NodeJS.Timeout | undefined = undefined;
 
-    // 监听文档修改事件
-    vscode.workspace.onDidChangeTextDocument(event => {
-        const editor = vscode.window.activeTextEditor;
-        if (editor && event.document === editor.document) {
-            if (debouncer) { clearTimeout(debouncer); }
-            debouncer = setTimeout(() => {
-                updateDecoration();
-                debouncer = undefined;
-            }, 50);  // 50ms
+    // 3. 将所有“资源”集中推入 subscriptions
+    context.subscriptions.push(
+        // 注册命令：捕获
+        vscode.commands.registerCommand('cato.capture', (catIndex: number) => {
+            showCaptureInfo(catIndex);
+        }),
+
+        // 注册命令：更新 Token
+        vscode.commands.registerCommand('cato.updateToken', async () => {
+            await context.secrets.delete('cato.apiToken');
+            await ensureApiToken(context);
+        }),
+
+        // 监听文档修改
+        vscode.workspace.onDidChangeTextDocument(event => {
+            const editor = vscode.window.activeTextEditor;
+            if (editor && event.document === editor.document) {
+                if (debouncer) clearTimeout(debouncer);
+                debouncer = setTimeout(() => updateDecoration(), 50);
+            }
+        }),
+
+        // 监听切换编辑器
+        vscode.window.onDidChangeActiveTextEditor(editor => {
+            if (editor) updateDecoration();
+        }),
+        // 插件卸载时强制取消定时器
+        {
+            dispose: () => {
+                if (debouncer) clearTimeout(debouncer);
+            }
         }
-    }, null, context.subscriptions);
+    );
 
-    // 初始加载和切换编辑器的逻辑保持不变
-    vscode.window.onDidChangeActiveTextEditor(editor => {
-        if (editor) updateDecoration();
-    }, null, context.subscriptions);
-
-    // 立即高亮打开的文件
-    if (vscode.window.activeTextEditor) updateDecoration();
+    // 4. 立即执行初始化
+    // 立即执行初始高亮
+    if (vscode.window.activeTextEditor) {
+        updateDecoration();
+    }
+    // 异步检测 Token
+    ensureApiToken(context).then(token => {
+        if (token) {
+            console.log('Cato: 已成功配置 API Token');
+        } else {
+            console.warn('Cato: Token 未设置，部分功能受限');
+        }
+    });
 }
 
-export function deactivate() {}
+export function deactivate() { }
 
 // const path = require('path');
 // const fs = require('fs');
